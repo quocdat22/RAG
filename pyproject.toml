@@ -1,0 +1,166 @@
+[project]
+name = "rag-system"
+version = "0.1.0"
+description = "RAG System for Analyst - MVP with LlamaIndex and Chroma"
+authors = [
+    { name = "Your Name", email = "your.email@example.com" }
+]
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+
+dependencies = [
+    # LLM & Embeddings
+    "openai>=1.0.0",
+    
+    # Vector Database - using simpler chromadb without heavy dependencies
+    "chromadb-client>=0.5.0",
+    
+    # Document Processing
+    "pypdf>=4.0.0",
+    "python-docx>=1.1.0",
+    "pandas>=2.2.0",
+    "openpyxl>=3.1.0",
+    
+    # Retrieval & Reranking
+    "cohere>=5.0.0",
+    "rank-bm25>=0.2.2",
+    
+    # Caching (optional)
+    "redis>=5.0.0",
+    
+    # Configuration
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "python-dotenv>=1.0.0",
+    
+    # UI
+    "streamlit>=1.30.0",
+    
+    # Utilities
+    "tiktoken>=0.5.2",
+    "langdetect>=1.0.9",
+    "tenacity>=8.2.3",
+    "rich>=13.7.0",
+    
+    # HTTP & API
+    "httpx>=0.26.0",
+    "fastapi>=0.109.0",
+    "uvicorn>=0.27.0",
+]
+
+
+[project.optional-dependencies]
+dev = [
+    # Testing
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-mock>=3.12.0",
+    
+    # Code Quality
+    "black>=24.0.0",
+    "ruff>=0.2.0",
+    "mypy>=1.8.0",
+    "isort>=5.13.0",
+    
+    # Type Stubs
+    "types-redis>=4.6.0",
+    "pandas-stubs>=2.1.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "C",  # flake8-comprehensions
+    "B",  # flake8-bugbear
+]
+ignore = [
+    "E501",  # line too long (handled by black)
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+]
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "chromadb.*",
+    "llama_index.*",
+    "cohere.*",
+    "langdetect.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=src",
+    "--cov-report=term-missing",
+]
+
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "*/tests/*",
+    "*/__init__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]

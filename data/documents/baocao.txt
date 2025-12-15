@@ -1,0 +1,56 @@
+### **Phần 1: Tóm Tắt Điều Hành**
+
+Năm 2024 đánh dấu một năm tăng trưởng mạnh mẽ và chuyển đổi chiến lược cho FutureTech Corp. Chúng tôi đã tập trung vào hai trụ cột chính: **Nghiên cứu & Phát triển (R&D) trong lĩnh vực AI/Điện toán đám mây** và mở rộng thị trường **Thương mại điện tử (E-commerce) tại Đông Nam Á**. Báo cáo này trình bày kết quả tài chính giả lập và các chỉ số hoạt động chính, nhằm phục vụ mục đích minh họa và kiểm tra khả năng phân tích dữ liệu có cấu trúc của hệ thống.
+
+### **Phần 2: Kết Quả Tài Chính Chính (2023 vs. 2024)**
+
+| **Chỉ Tiêu** | **Năm 2023** | **Năm 2024** | **% Thay Đổi** | **Ghi Chú** |
+| :--- | :--- | :--- | :--- | :--- |
+| **Doanh Thu Thuần** | 2,500 | 3,450 | **+38.0%** | Tăng trưởng vượt kế hoạch. |
+| *Trong đó: Mảng AI & Cloud* | 800 | 1,450 | +81.3% | Động lực tăng trưởng chính. |
+| *Trong đó: Mảng E-commerce* | 1,700 | 2,000 | +17.6% | Tăng trưởng ổn định. |
+| **Lợi Nhuận Gộp** | 1,000 | 1,450 | +45.0% | Biên lợi nhuận gộp cải thiện. |
+| **Biên Lợi Nhuận Gộp** | 40.0% | 42.0% | +2.0 điểm % | Nhờ quy mô và tối ưu chi phí. |
+| **Chi Phí Hoạt Động (OPEX)** | 850 | 1,100 | +29.4% | Đầu tư mạnh vào R&D và tiếp thị. |
+| *Trong đó: Chi phí R&D* | 300 | 500 | +66.7% | Tập trung vào AI Generative. |
+| **Lợi Nhuận Trước Thuế (EBT)** | 150 | 350 | **+133.3%** | Lợi nhuận tăng đột biến. |
+| **Biên Lợi Nhuận Ròng** | 4.8% | 8.1% | +3.3 điểm % | Hiệu quả kinh doanh được cải thiện rõ rệt. |
+
+### **Phần 3: Chỉ Số Hoạt Động Chính (KPIs)**
+
+**3.1. Mảng AI & Dịch vụ Đám mây:**
+*   **Số lượng API calls (triệu)** : Tăng từ 150 (2023) lên **320 (2024)**.
+*   **Khách hàng doanh nghiệp (Enterprise)** : Tăng từ 120 lên **220** khách hàng.
+*   **Thời gian hoạt động ổn định (Uptime)** : Đạt **99.95%**, vượt mục tiêu 99.9%.
+*   **Dự án nổi bật**: Triển khai thành công nền tảng **"VietAI Assistant"** cho 5 ngân hàng lớn.
+
+**3.2. Mảng Thương mại điện tử (FutureMart):**
+*   **Tổng giá trị giao dịch (GMV)** : 5,200 tỷ (2023) lên **6,800 tỷ (2024)**.
+*   **Người dùng hoạt động hàng tháng (MAU)** : 8.5 triệu lên **12.2 triệu**.
+*   **Tỷ lệ giữ chân khách hàng (Retention Rate)** : Ổn định ở mức cao **65%**.
+*   **Mở rộng thị trường**: Chính thức ra mắt tại **Thái Lan** (Q3/2024).
+
+### **Phần 4: Thách Thức và Rủi Ro Được Nhận Diện**
+
+1.  **Cạnh tranh về nhân tài AI**: Thị trường tuyển dụng kỹ sư AI và khoa học dữ liệu cấp cao ngày càng khốc liệt, gây áp lực lên chi phí nhân sự.
+2.  **Rủi ro bảo mật dữ liệu**: Việc xử lý lượng lớn dữ liệu khách hàng đòi hỏi đầu tư liên tục vào hệ thống an ninh mạng và tuân thủ (GDPR, PDPA).
+3.  **Biến động thị trường quốc tế**: Hoạt động tại Thái Lan có thể chịu tác động từ tỷ giá và quy định thương mại địa phương.
+
+### **Phần 5: Định Hướng Chiến Lược 2025**
+
+*   **Mục tiêu tài chính**: Đạt **doanh thu 4,500 tỷ**, **lợi nhuận ròng 400 tỷ**.
+*   **Trọng tâm công nghệ**:
+    *   Phát hành bản beta nền tảng **"FutureCloud AI"** dành riêng cho doanh nghiệp vừa và nhỏ.
+    *   Tăng cường năng lực **AI Generative** cho sáng tạo nội dung và thiết kế.
+*   **Mở rộng kinh doanh**:
+    *   Thâm nhập sâu hơn vào thị trường **Thái Lan** và nghiên cứu cơ hội tại **Philippines**.
+    *   Phát triển tính năng **Live Commerce** tích hợp AI trên FutureMart.
+
+### **Phần 6: Câu Hỏi Mẫu để Kiểm tra Hệ Thống Truy xuất & Phân tích (RAG/Q&A)**
+
+1.  **H: Nguyên nhân chính nào dẫn đến mức tăng trưởng lợi nhuận trước thuế (EBT) ấn tượng 133.3% trong năm 2024?**
+2.  **H: Mảng kinh doanh nào có tốc độ tăng trưởng doanh thu nhanh nhất? Đóng góp của mảng đó vào tổng doanh thu là bao nhiêu?**
+3.  **H: Công ty đang đối mặt với những rủi ro chính nào liên quan đến hoạt động mở rộng quốc tế?**
+4.  **H: Dựa trên định hướng 2025, đâu là sản phẩm công nghệ trọng tâm mới mà công ty sẽ phát triển cho đối tượng khách hàng doanh nghiệp vừa và nhỏ (SME)?**
+5.  **H: So sánh biên lợi nhuận gộp giữa hai năm 2023 và 2024. Xu hướng này cho thấy điều gì về hiệu quả sản xuất/kinh doanh của công ty?**
+

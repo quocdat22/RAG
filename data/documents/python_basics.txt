@@ -1,0 +1,28 @@
+
+Python Programming Basics
+
+Python is a high-level, interpreted programming language known for its simple syntax
+and readability. Created by Guido van Rossum and first released in 1991, Python emphasizes
+code readability with its notable use of significant indentation.
+
+Key Features
+- Easy to learn and use
+- Extensive standard library
+- Dynamic typing
+- Cross-platform compatibility
+- Large community support
+
+Popular Libraries
+Python has a rich ecosystem of libraries:
+- NumPy and Pandas for data analysis
+- TensorFlow and PyTorch for machine learning
+- Django and Flask for web development
+- Matplotlib and Seaborn for visualization
+
+Use Cases
+Python is widely used for:
+- Web development
+- Data science and analytics
+- Machine learning and AI
+- Automation and scripting
+- Scientific computing
