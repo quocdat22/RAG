@@ -1,11 +1,12 @@
 """
 Main Streamlit application for RAG System.
 
-This provides a web interface for:
+Phase 2 Enhanced with:
+- Query interface (with hybrid search, reranking, memory)
 - Document upload
-- Query interface
-- Document management
-- Results display
+- Document management & preview
+- Analytics dashboard
+- Export functionality
 """
 
 import streamlit as st
@@ -16,7 +17,7 @@ from ui.components.query_interface import render_query_interface
 
 # Page configuration
 st.set_page_config(
-    page_title="RAG System",
+    page_title="RAG System v2.0",
     page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -55,6 +56,12 @@ st.markdown(
         color: #0066cc;
         font-weight: bold;
     }
+    .metric-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 1rem;
+        border-radius: 0.5rem;
+        color: white;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -64,15 +71,21 @@ st.markdown(
 def main():
     """Main application."""
     # Header
-    st.title("🤖 RAG System - AI-Powered Document Analysis")
-    st.markdown("*Ask questions about your documents and get AI-powered answers with citations*")
+    st.title("🤖 RAG System v2.0 - AI-Powered Document Analysis")
+    st.markdown("*Ask questions about your documents with hybrid search, reranking, and multi-turn chat*")
 
     # Sidebar navigation
     with st.sidebar:
         st.header("📁 Navigation")
         page = st.radio(
             "Select a page:",
-            ["💬 Query Documents", "📤 Upload Documents", "📚 Manage Documents"],
+            [
+                "💬 Query Documents",
+                "📤 Upload Documents", 
+                "📚 Manage Documents",
+                "📄 Document Preview",
+                "📊 Analytics",
+            ],
             label_visibility="collapsed",
         )
 
@@ -89,15 +102,18 @@ def main():
             doc_count = default_vector_store.count()
             unique_docs = len(default_vector_store.list_documents())
 
-            st.metric("Total Chunks", doc_count)
-            st.metric("Documents", unique_docs)
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Chunks", doc_count)
+            with col2:
+                st.metric("Docs", unique_docs)
 
             # LLM stats
             usage = default_llm_client.get_usage_stats()
             st.metric("Total Cost", f"${usage['total_cost']:.4f}")
 
         except Exception as e:
-            st.warning(f"Could not load stats: {str(e)}")
+            st.warning(f"Could not load stats: {str(e)[:50]}")
 
         st.divider()
 
@@ -115,20 +131,51 @@ def main():
                 key="temp_slider",
             )
 
+        st.divider()
+        
+        # Phase 2 features status
+        with st.expander("🚀 Phase 2 Features"):
+            st.markdown("**✅ Enabled:**")
+            st.markdown("- 🔀 Hybrid Search (BM25+Vector)")
+            st.markdown("- 📊 Cohere Reranking")
+            st.markdown("- 💭 Conversation Memory")
+            st.markdown("- 📈 Analytics Dashboard")
+            st.markdown("- 📥 Export (MD/PDF)")
+            st.markdown("- 🌐 REST API (/docs)")
+
     # Main content based on selected page
     if page == "💬 Query Documents":
         render_query_interface()
+        
     elif page == "📤 Upload Documents":
         render_document_upload()
+        
     elif page == "📚 Manage Documents":
         render_document_manager()
+        
+    elif page == "📄 Document Preview":
+        try:
+            from ui.components.document_preview import render_document_preview
+            render_document_preview()
+        except ImportError as e:
+            st.error(f"Document preview not available: {e}")
+            
+    elif page == "📊 Analytics":
+        try:
+            from ui.pages.analytics import render_analytics_dashboard
+            render_analytics_dashboard()
+        except ImportError as e:
+            st.error(f"Analytics not available: {e}")
+            st.info("Make sure all dependencies are installed.")
 
     # Footer
     st.divider()
     st.markdown(
         """
         <div style='text-align: center; color: #666; padding: 1rem;'>
-            <small>RAG System MVP | Built with ❤️ using Streamlit, OpenAI, and Chroma</small>
+            <small>RAG System v2.0 | Phase 2 Complete | Built with ❤️ using Streamlit, OpenAI, Cohere, and Chroma</small>
+            <br>
+            <small>API: <a href="http://localhost:8000/docs" target="_blank">http://localhost:8000/docs</a></small>
         </div>
         """,
         unsafe_allow_html=True,

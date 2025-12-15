@@ -137,6 +137,36 @@ class Settings(BaseSettings):
         default="localhost", description="Streamlit server address"
     )
 
+    # ============================================================================
+    # Hybrid Search Configuration (Phase 2)
+    # ============================================================================
+    enable_hybrid_search: bool = Field(
+        default=True, description="Enable hybrid BM25+Vector search"
+    )
+    hybrid_alpha: float = Field(
+        default=0.5, ge=0.0, le=1.0, 
+        description="Weight for vector vs BM25 (1.0=pure vector, 0.0=pure BM25)"
+    )
+
+    # ============================================================================
+    # Conversation Memory Configuration (Phase 2)
+    # ============================================================================
+    enable_memory: bool = Field(
+        default=True, description="Enable conversation memory for multi-turn chat"
+    )
+    memory_max_turns: int = Field(
+        default=10, ge=1, le=50, description="Maximum conversation turns to keep"
+    )
+    memory_max_tokens: int = Field(
+        default=4000, ge=500, le=16000, description="Maximum tokens for conversation context"
+    )
+
+    # ============================================================================
+    # API Configuration (Phase 2)
+    # ============================================================================
+    api_host: str = Field(default="0.0.0.0", description="API server host")
+    api_port: int = Field(default=8000, ge=1024, le=65535, description="API server port")
+
     @field_validator("chroma_persist_dir", "data_dir")
     @classmethod
     def ensure_directory_exists(cls, v: Path) -> Path:

@@ -41,6 +41,7 @@ class ResponseSynthesizer(LoggerMixin):
         retrieved_docs: list[dict[str, Any]],
         query_type: str = "SIMPLE",
         include_metadata: bool = True,
+        conversation_context: str = "",
     ) -> dict[str, Any]:
         """
         Synthesize response from query and retrieved documents.
@@ -50,6 +51,7 @@ class ResponseSynthesizer(LoggerMixin):
             retrieved_docs: List of retrieved documents from vector store
             query_type: Type of query (SIMPLE, COMPLEX, ANALYTICAL)
             include_metadata: Include metadata in context
+            conversation_context: Previous conversation for multi-turn chat
 
         Returns:
             Dictionary with answer, sources, and metadata
@@ -57,6 +59,7 @@ class ResponseSynthesizer(LoggerMixin):
         self.logger.info(
             f"Synthesizing response for query type '{query_type}' "
             f"with {len(retrieved_docs)} documents"
+            f"{' (with conversation context)' if conversation_context else ''}"
         )
 
         # Handle no results case
@@ -70,6 +73,10 @@ class ResponseSynthesizer(LoggerMixin):
         metadata_str = ""
         if include_metadata and retrieved_docs:
             metadata_str = self._build_metadata_summary(retrieved_docs)
+
+        # Add conversation context if provided
+        if conversation_context:
+            context = f"{conversation_context}\n\n---\n\nCurrent documents:\n{context}"
 
         # Get appropriate prompt template
         prompt_template = prompts.get_prompt_for_query_type(query_type)
