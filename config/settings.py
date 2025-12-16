@@ -69,6 +69,19 @@ class Settings(BaseSettings):
     )
 
     # ============================================================================
+    # LlamaParse Configuration (Advanced PDF Processing)
+    # ============================================================================
+    llama_cloud_api_key: str | None = Field(
+        default=None, description="LlamaCloud API key for LlamaParse"
+    )
+    enable_llamaparse: bool = Field(
+        default=True, description="Use LlamaParse for PDF processing when available"
+    )
+    llamaparse_result_type: str = Field(
+        default="markdown", description="LlamaParse output format (markdown/text)"
+    )
+
+    # ============================================================================
     # Retrieval Configuration
     # ============================================================================
     retrieval_top_k: int = Field(

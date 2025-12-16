@@ -69,7 +69,7 @@ Required environment variables:
 ### 1. Run the Streamlit UI
 
 ```bash
-uv run streamlit run ui/app.py
+.venv/Scripts/activate && python run_ui.py
 ```
 
 ### 2. Upload Documents

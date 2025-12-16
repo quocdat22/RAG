@@ -9,6 +9,7 @@ pypdf>=4.0.0
 python-docx>=1.1.0
 pandas>=2.2.0
 openpyxl>=3.1.0
+llama-parse>=0.5.0
 
 # Retrieval & Reranking
 cohere>=5.0.0
@@ -27,6 +28,7 @@ streamlit>=1.30.0
 
 # Utilities
 tiktoken>=0.5.2
+nest-asyncio>=1.6.0
 langdetect>=1.0.9
 tenacity>=8.2.3
 rich>=13.7.0

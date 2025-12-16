@@ -361,6 +361,114 @@ class XLSXLoader(BaseLoader):
             raise DocumentLoadError(file_path.name, str(e))
 
 
+class LlamaParseLoader(BaseLoader):
+    """
+    Advanced PDF loader using LlamaParse for complex document extraction.
+    
+    Features:
+    - Preserves table structure as markdown
+    - Describes charts and images
+    - Handles multi-column layouts
+    - Removes headers/footers noise
+    """
+    
+    _parser = None  # Class-level parser cache
+    
+    def __init__(self):
+        """Initialize LlamaParse loader."""
+        from config.settings import settings
+        
+        if not settings.llama_cloud_api_key:
+            raise ValueError("LLAMA_CLOUD_API_KEY not configured")
+        
+        # Lazy import to avoid issues when llama-parse not installed
+        try:
+            from llama_parse import LlamaParse
+        except ImportError:
+            raise ImportError(
+                "llama-parse package not installed. Install with: pip install llama-parse"
+            )
+        
+        # Create parser with optimal settings for complex PDFs
+        if LlamaParseLoader._parser is None:
+            LlamaParseLoader._parser = LlamaParse(
+                api_key=settings.llama_cloud_api_key,
+                result_type=settings.llamaparse_result_type,
+                parsing_instruction=(
+                    "Extract all content from this document. "
+                    "Format tables as markdown tables with headers. "
+                    "For charts and graphs, provide a detailed description of what they show. "
+                    "Preserve section headers and document structure. "
+                    "Remove repeated headers and footers."
+                ),
+                verbose=False,
+            )
+        
+        self.parser = LlamaParseLoader._parser
+    
+    def load(self, file_path: Path) -> Document:
+        """Load PDF document using LlamaParse."""
+        import asyncio
+        
+        try:
+            self.logger.info(f"Loading PDF with LlamaParse: {file_path.name}")
+            
+            # Run async parse in sync context
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # We're in an async context (like Streamlit)
+                    import nest_asyncio
+                    nest_asyncio.apply()
+                    documents = loop.run_until_complete(
+                        self.parser.aload_data(str(file_path))
+                    )
+                else:
+                    documents = loop.run_until_complete(
+                        self.parser.aload_data(str(file_path))
+                    )
+            except RuntimeError:
+                # No event loop exists, create one
+                documents = asyncio.run(self.parser.aload_data(str(file_path)))
+            
+            if not documents:
+                raise DocumentLoadError(
+                    file_path.name, "LlamaParse returned no content"
+                )
+            
+            # Combine all parsed documents
+            content_parts = []
+            for i, doc in enumerate(documents):
+                if hasattr(doc, 'text') and doc.text.strip():
+                    content_parts.append(doc.text)
+            
+            content = "\n\n".join(content_parts)
+            
+            if not content.strip():
+                raise DocumentLoadError(
+                    file_path.name, "No text content extracted from PDF"
+                )
+            
+            # Create metadata
+            metadata = self._create_metadata(file_path)
+            metadata.update({
+                "total_pages": len(documents),
+                "loader": "LlamaParseLoader",
+                "parse_method": "llamaparse",
+                "result_type": "markdown",
+            })
+            
+            self.logger.info(
+                f"Successfully loaded PDF with LlamaParse: {file_path.name} ({len(documents)} pages)"
+            )
+            
+            return Document(content=content, metadata=metadata)
+            
+        except Exception as e:
+            self.logger.error(f"LlamaParse failed for {file_path.name}: {e}")
+            raise DocumentLoadError(file_path.name, str(e))
+
+
 class DocumentLoaderFactory:
     """Factory for creating appropriate document loaders."""
 
@@ -387,7 +495,20 @@ class DocumentLoaderFactory:
         Raises:
             UnsupportedFileTypeError: If file type not supported
         """
+        from config.settings import settings
+        
         extension = get_file_extension(file_path.name)
+        
+        # Use LlamaParse for PDFs if enabled and API key available
+        if extension == "pdf" and settings.enable_llamaparse and settings.llama_cloud_api_key:
+            try:
+                return LlamaParseLoader()
+            except (ImportError, ValueError) as e:
+                # Fall back to standard PDFLoader
+                import logging
+                logging.getLogger(__name__).warning(
+                    f"LlamaParse unavailable, falling back to PDFLoader: {e}"
+                )
 
         loader_class = cls._loaders.get(extension)
         if not loader_class:
@@ -418,6 +539,7 @@ __all__ = [
     "Document",
     "BaseLoader",
     "PDFLoader",
+    "LlamaParseLoader",
     "TXTLoader",
     "CSVLoader",
     "DOCXLoader",
