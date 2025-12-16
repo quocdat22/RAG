@@ -11,6 +11,7 @@ from config import prompts
 from src.core.logging import LoggerMixin, log_execution_time
 from src.core.utils import format_metadata, format_sources
 from src.generation.llm_client import LLMClient
+from src.generation.research_analyzer import ResearchAnalyzer
 
 
 class ResponseSynthesizer(LoggerMixin):
@@ -22,6 +23,7 @@ class ResponseSynthesizer(LoggerMixin):
     - Prompt formatting
     - Response generation
     - Citation extraction
+    - Research analysis routing
     """
 
     def __init__(self, llm_client: LLMClient | None = None):
@@ -32,7 +34,8 @@ class ResponseSynthesizer(LoggerMixin):
             llm_client: LLM client (creates default if None)
         """
         self.llm_client = llm_client or LLMClient()
-        self.logger.info("Initialized ResponseSynthesizer")
+        self.research_analyzer = ResearchAnalyzer(self.llm_client)
+        self.logger.info("Initialized ResponseSynthesizer with ResearchAnalyzer")
 
     @log_execution_time
     def synthesize(
@@ -65,6 +68,46 @@ class ResponseSynthesizer(LoggerMixin):
         # Handle no results case
         if not retrieved_docs:
             return self._handle_no_results(query)
+        
+        # Route research analysis queries to ResearchAnalyzer
+        if query_type in ["COMPARISON", "TREND_ANALYSIS", "GAP_IDENTIFICATION", "CONSENSUS_DETECTION"]:
+            self.logger.info(f"Routing to ResearchAnalyzer for {query_type}")
+            analysis_result = self.research_analyzer.analyze(
+                query=query,
+                documents=retrieved_docs,
+                analysis_type=query_type,
+            )
+            
+            # Handle errors from research analyzer
+            if "error" in analysis_result:
+                return {
+                    "answer": f"Analysis failed: {analysis_result['error']}",
+                    "sources": [],
+                    "source_documents": retrieved_docs,
+                    "query_type": query_type,
+                    "error": analysis_result["error"],
+                }
+            
+            # Format the analysis result for display
+            # Extract the main analysis text from the result
+            analysis_key_map = {
+                "COMPARISON": "comparison_matrix",
+                "TREND_ANALYSIS": "trend_analysis",
+                "GAP_IDENTIFICATION": "gap_analysis",
+                "CONSENSUS_DETECTION": "consensus_analysis",
+            }
+            
+            analysis_text_key = analysis_key_map.get(query_type, "analysis")
+            answer = analysis_result.get(analysis_text_key, "Analysis completed but no output generated.")
+            
+            return {
+                "answer": answer,
+                "sources": analysis_result.get("sources", []),
+                "source_documents": retrieved_docs,
+                "query_type": query_type,
+                "analysis_metadata": analysis_result,  # Include full result for reference
+                "token_usage": self.llm_client.get_usage_stats(),
+            }
 
         # Build context from retrieved documents
         context = self._build_context(retrieved_docs)

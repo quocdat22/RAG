@@ -39,10 +39,20 @@ Categories:
 1. SIMPLE - Straightforward factual questions that can be answered from single document
 2. COMPLEX - Questions requiring analysis across multiple documents or reasoning
 3. ANALYTICAL - Questions asking for trends, comparisons, or strategic insights
+4. COMPARISON - Questions asking to compare multiple approaches, methods, or papers
+5. TREND_ANALYSIS - Questions about temporal evolution, development over time, or research trends
+6. GAP_IDENTIFICATION - Questions about missing research, under-explored areas, or research gaps
+7. CONSENSUS_DETECTION - Questions about agreement/disagreement, consensus, or controversy in findings
 
 User Query: {query}
 
-Respond with ONLY the category name (SIMPLE, COMPLEX, or ANALYTICAL).
+Examples:
+- "So sánh phương pháp A và B" → COMPARISON
+- "Các phương pháp attention phát triển như thế nào từ 2017-2024?" → TREND_ANALYSIS
+- "Vấn đề nào chưa được nghiên cứu kỹ?" → GAP_IDENTIFICATION
+- "Pre-training có luôn cải thiện performance không?" → CONSENSUS_DETECTION
+
+Respond with ONLY the category name.
 """
 
 QUERY_EXPANSION_PROMPT = """Given the user's query, generate 2-3 alternative phrasings that might help retrieve relevant information.
@@ -143,6 +153,179 @@ Complete Analysis:
 """
 
 # ============================================================================
+# Research Analysis Prompts
+# ============================================================================
+
+COMPARISON_MATRIX_PROMPT = """Create a comprehensive comparison matrix for the research approaches mentioned in the query.
+
+Query: {query}
+
+Structured Data Extracted from Papers:
+{structured_data}
+
+Comparison Criteria: {criteria}
+
+Instructions:
+1. Create a **comparison table** with approaches as rows and criteria as columns
+2. Fill in the table with specific values/findings from the papers
+3. Use "N/A" for missing information
+4. After the table, provide a **summary analysis** highlighting:
+   - Key differences between approaches
+   - Strengths and weaknesses of each
+   - Which approach is best for what scenarios
+5. Cite sources using [source_id] for each data point
+
+Format your response as:
+
+## Comparison Matrix
+
+| Approach | Accuracy | Speed | Dataset | Year | Notes |
+|----------|----------|-------|---------|------|-------|
+| Method A | ...      | ...   | ...     | ...  | ...   |
+| Method B | ...      | ...   | ...     | ...  | ...   |
+
+## Analysis
+
+[Your detailed comparison analysis here]
+
+## Recommendations
+
+[Which approach to use when]
+"""
+
+TREND_ANALYSIS_PROMPT = """Analyze the temporal evolution and trends in research based on the provided data.
+
+Query: {query}
+
+Temporal Data (sorted by year):
+{temporal_data}
+
+Time Range: {time_range}
+
+Instructions:
+1. Identify **key milestones** and breakthrough papers
+2. Describe **evolutionary patterns**:
+   - What changed over time?
+   - What remained constant?
+   - What new approaches emerged?
+3. Identify **trends**:
+   - Performance improvements
+   - Methodological shifts
+   - Dataset evolution
+4. **Predict future directions** based on observed trends
+5. Cite papers using [source_id]
+
+Format your response as:
+
+## Timeline of Key Developments
+
+[Chronological narrative of major advances]
+
+## Observed Trends
+
+1. **Trend 1**: [Description]
+2. **Trend 2**: [Description]
+...
+
+## Future Directions
+
+[Predicted developments based on trends]
+"""
+
+GAP_IDENTIFICATION_PROMPT = """Identify research gaps and under-explored areas based on the corpus analysis.
+
+Query: {query}
+
+Corpus Coverage Summary:
+{corpus_coverage}
+
+Instructions:
+1. Analyze what topics/methods/datasets are **well-covered** in the corpus
+2. Identify what is **missing or under-explored**:
+   - Methodological gaps
+   - Dataset gaps  
+   - Application domain gaps
+   - Evaluation metric gaps
+3. For each gap, explain:
+   - Why it's important
+   - What research would fill it
+   - Potential impact
+4. **Rank gaps by priority** (high/medium/low)
+5. Cite papers to show coverage using [source_id]
+
+Format your response as:
+
+## Well-Covered Areas
+
+[What the corpus thoroughly addresses]
+
+## Identified Research Gaps
+
+### High Priority Gaps
+1. **Gap Name**: [Description]
+   - Why important: ...
+   - Suggested research: ...
+   - Potential impact: ...
+
+### Medium Priority Gaps
+...
+
+### Low Priority Gaps
+...
+
+## Summary
+
+[Overall assessment of gaps]
+"""
+
+CONSENSUS_DETECTION_PROMPT = """Analyze consensus and controversy in research findings across multiple papers.
+
+Query: {query}
+
+Claims and Findings from Papers:
+{claims}
+
+Instructions:
+1. Identify **widely agreed-upon findings** (consensus):
+   - What do most/all papers agree on?
+   - What evidence supports this consensus?
+2. Identify **controversial or debated points**:
+   - What do papers disagree on?
+   - What are the conflicting findings?
+   - What might explain the disagreement?
+3. For each point, indicate:
+   - **Consensus level**: Strong consensus / Moderate consensus / No consensus / Controversy
+   - **Papers supporting**: [source_ids]
+   - **Papers opposing**: [source_ids]
+4. Provide **meta-analysis**: What does the field agree on vs what needs more research?
+
+Format your response as:
+
+## Strong Consensus ✅
+
+1. **Finding**: [Description]
+   - Supporting papers: [1], [2], [3]
+   - Evidence: ...
+
+## Moderate Consensus 🟨
+
+1. **Finding**: [Description]
+   - Majority view: [papers]
+   - Minority view: [papers]
+
+## Active Controversies ⚠️
+
+1. **Debate**: [Topic]
+   - Position A: [Description] - Papers: [1], [2]
+   - Position B: [Description] - Papers: [3], [4]
+   - Explanation: ...
+
+## Meta-Analysis
+
+[Overall assessment of field agreement]
+"""
+
+# ============================================================================
 # Document Summarization Prompts
 # ============================================================================
 
@@ -228,7 +411,7 @@ def get_prompt_for_query_type(query_type: str) -> str:
     Get the appropriate response prompt based on query type.
 
     Args:
-        query_type: Type of query (SIMPLE, COMPLEX, ANALYTICAL)
+        query_type: Type of query (SIMPLE, COMPLEX, ANALYTICAL, COMPARISON, etc.)
 
     Returns:
         Appropriate prompt template
@@ -237,6 +420,10 @@ def get_prompt_for_query_type(query_type: str) -> str:
         "SIMPLE": QA_RESPONSE_PROMPT,
         "COMPLEX": QA_RESPONSE_PROMPT,
         "ANALYTICAL": ANALYTICAL_RESPONSE_PROMPT,
+        "COMPARISON": COMPARISON_MATRIX_PROMPT,
+        "TREND_ANALYSIS": TREND_ANALYSIS_PROMPT,
+        "GAP_IDENTIFICATION": GAP_IDENTIFICATION_PROMPT,
+        "CONSENSUS_DETECTION": CONSENSUS_DETECTION_PROMPT,
     }
     return prompts.get(query_type, QA_RESPONSE_PROMPT)
 
@@ -253,6 +440,10 @@ __all__ = [
     "METADATA_EXTRACTION_PROMPT",
     "NO_CONTEXT_PROMPT",
     "INSUFFICIENT_CONTEXT_PROMPT",
+    "COMPARISON_MATRIX_PROMPT",
+    "TREND_ANALYSIS_PROMPT",
+    "GAP_IDENTIFICATION_PROMPT",
+    "CONSENSUS_DETECTION_PROMPT",
     "format_prompt",
     "get_prompt_for_query_type",
 ]

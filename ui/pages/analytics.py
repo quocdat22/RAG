@@ -124,6 +124,11 @@ def render_analytics_dashboard():
         logger.error(f"Failed to load analytics: {e}")
         st.error(f"Failed to load analytics: {e}")
         st.info("Analytics data will be available after some queries are made.")
+    
+    st.divider()
+    
+    # Research Analysis Section
+    render_research_analysis_section()
 
 
 def render_charts(period: str):
@@ -271,6 +276,200 @@ def render_search_method_stats():
             
     except Exception as e:
         logger.warning(f"Failed to render search method stats: {e}")
+
+
+def render_research_analysis_section():
+    """Render research analysis capabilities section."""
+    st.subheader("🔬 Research Analysis Tools")
+    st.markdown(
+        "Advanced analysis tools for comparing papers, identifying trends, "
+        "finding research gaps, and detecting consensus."
+    )
+    
+    # Analysis mode selector
+    analysis_mode = st.selectbox(
+        "Analysis Type:",
+        options=[
+            "COMPARISON",
+            "TREND_ANALYSIS",
+            "GAP_IDENTIFICATION",
+            "CONSENSUS_DETECTION",
+        ],
+        format_func=lambda x: {
+            "COMPARISON": "📊 Comparison Matrix",
+            "TREND_ANALYSIS": "📈 Trend Analysis",
+            "GAP_IDENTIFICATION": "🔍 Research Gaps",
+            "CONSENSUS_DETECTION": "⚖️ Consensus vs Controversy",
+        }.get(x, x),
+        help="Select the type of research analysis to perform",
+    )
+    
+    # Show description based on mode
+    descriptions = {
+        "COMPARISON": "Compare multiple research approaches, methods, or papers side-by-side with customizable criteria.",
+        "TREND_ANALYSIS": "Analyze how research topics or methods evolved over time.",
+        "GAP_IDENTIFICATION": "Identify under-explored areas and research gaps in your corpus.",
+        "CONSENSUS_DETECTION": "Detect what findings are widely accepted vs controversial.",
+    }
+    st.info(descriptions.get(analysis_mode, ""))
+    
+    # Configuration based on analysis mode
+    config = {}
+    
+    if analysis_mode == "COMPARISON":
+        st.markdown("**Comparison Criteria:**")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            criteria = st.multiselect(
+                "Select criteria to compare:",
+                options=["accuracy", "speed", "dataset", "year", "method_type", "parameters", "training_time"],
+                default=["accuracy", "speed", "dataset", "year"],
+                help="Select which aspects to compare across papers",
+            )
+        
+        with col2:
+            custom_criteria = st.text_input(
+                "Additional criteria (comma-separated):",
+                placeholder="e.g., memory_usage, inference_cost",
+                help="Add custom criteria not in the default list",
+            )
+        
+        # Combine criteria
+        if custom_criteria:
+            criteria.extend([c.strip() for c in custom_criteria.split(",") if c.strip()])
+        
+        config["criteria"] = criteria
+    
+    elif analysis_mode == "TREND_ANALYSIS":
+        st.markdown("**Temporal Range:**")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            start_year = st.number_input(
+                "Start Year:",
+                min_value=2000,
+                max_value=2024,
+                value=2017,
+                step=1,
+            )
+        
+        with col2:
+            end_year = st.number_input(
+                "End Year:",
+                min_value=2000,
+                max_value=2024,
+                value=2024,
+                step=1,
+            )
+        
+        config["time_range"] = (start_year, end_year)
+        
+        focus_area = st.text_input(
+            "Focus Topic/Method (optional):",
+            placeholder="e.g., attention mechanisms, transformers",
+            help="Leave empty to analyze all topics",
+        )
+        if focus_area:
+            config["focus_area"] = focus_area
+    
+    # Query input
+    st.markdown("**Analysis Query:**")
+    query_examples = {
+        "COMPARISON": "So sánh BERT, GPT-2, và T5 về accuracy và speed",
+        "TREND_ANALYSIS": "Các phương pháp attention phát triển như thế nào từ 2017-2024?",
+        "GAP_IDENTIFICATION": "Vấn đề nào trong NLP chưa được nghiên cứu kỹ?",
+        "CONSENSUS_DETECTION": "Pre-training có luôn cải thiện performance không?",
+    }
+    
+    analysis_query = st.text_area(
+        "Enter your research analysis query:",
+        placeholder=query_examples.get(analysis_mode, ""),
+        help="Describe what you want to analyze",
+        height=100,
+    )
+    
+    # Action buttons
+    col1, col2 = st.columns([1, 4])
+    
+    with col1:
+        run_analysis = st.button(
+            "▶️ Run Analysis",
+            type="primary",
+            use_container_width=True,
+            disabled=not analysis_query,
+        )
+    
+    with col2:
+        if analysis_query:
+            st.caption(f"Analysis will use **{analysis_mode}** mode")
+        else:
+            st.caption("Enter a query to run analysis")
+    
+    # Run analysis when button clicked
+    if run_analysis and analysis_query:
+        with st.spinner(f"Running {analysis_mode} analysis..."):
+            try:
+                # Import necessary components
+                from src.retrieval.hybrid_retriever import default_hybrid_retriever
+                from src.generation.research_analyzer import default_research_analyzer
+                
+                # Retrieve relevant documents
+                st.info("🔍 Retrieving relevant documents...")
+                retrieval_result = default_hybrid_retriever.search(
+                    query=analysis_query,
+                    top_k=20,  # Get more documents for analysis
+                    search_method="hybrid",
+                )
+                
+                if not retrieval_result or not retrieval_result.get("results"):
+                    st.warning("No relevant documents found. Please upload papers related to your query first.")
+                    return
+                
+                documents = retrieval_result["results"]
+                st.success(f"Found {len(documents)} relevant documents")
+                
+                # Run analysis
+                st.info(f"🔬 Performing {analysis_mode} analysis...")
+                analysis_result = default_research_analyzer.analyze(
+                    query=analysis_query,
+                    documents=documents,
+                    analysis_type=analysis_mode,
+                    **config,
+                )
+                
+                # Display results
+                if "error" in analysis_result:
+                    st.error(f"Analysis failed: {analysis_result['error']}")
+                else:
+                    st.success("✅ Analysis complete!")
+                    
+                    # Get the main analysis content
+                    analysis_key_map = {
+                        "COMPARISON": "comparison_matrix",
+                        "TREND_ANALYSIS": "trend_analysis",
+                        "GAP_IDENTIFICATION": "gap_analysis",
+                        "CONSENSUS_DETECTION": "consensus_analysis",
+                    }
+                    
+                    analysis_key = analysis_key_map.get(analysis_mode, "analysis")
+                    analysis_content = analysis_result.get(analysis_key, "No analysis output")
+                    
+                    # Display main analysis
+                    st.markdown("### 📋 Analysis Results")
+                    st.markdown(analysis_content)
+                    
+                    # Display additional metadata if available
+                    with st.expander("📊 View Analysis Metadata", expanded=False):
+                        st.json(analysis_result)
+                
+            except ImportError as e:
+                st.error(f"Import error: {e}")
+                st.info("Make sure all required modules are installed.")
+            except Exception as e:
+                logger.error(f"Research analysis failed: {e}", exc_info=True)
+                st.error(f"Analysis failed: {str(e)}")
+                st.info("Try rephrasing your query or checking if relevant papers are uploaded.")
 
 
 # Export for Streamlit pages
