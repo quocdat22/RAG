@@ -36,17 +36,16 @@ Your responses should:
 QUERY_CLASSIFICATION_PROMPT = """Classify the following user query into one of these categories:
 
 Categories:
-1. SIMPLE - Straightforward factual questions that can be answered from single document
-2. COMPLEX - Questions requiring analysis across multiple documents or reasoning
-3. ANALYTICAL - Questions asking for trends, comparisons, or strategic insights
-4. COMPARISON - Questions asking to compare multiple approaches, methods, or papers
-5. TREND_ANALYSIS - Questions about temporal evolution, development over time, or research trends
-6. GAP_IDENTIFICATION - Questions about missing research, under-explored areas, or research gaps
-7. CONSENSUS_DETECTION - Questions about agreement/disagreement, consensus, or controversy in findings
+1. GENERAL - General questions that can be answered from the documents
+2. COMPARISON - Questions asking to compare multiple approaches, methods, or papers
+3. TREND_ANALYSIS - Questions about temporal evolution, development over time, or research trends
+4. GAP_IDENTIFICATION - Questions about missing research, under-explored areas, or research gaps
+5. CONSENSUS_DETECTION - Questions about agreement/disagreement, consensus, or controversy in findings
 
 User Query: {query}
 
 Examples:
+- "What is the transformer architecture?" → GENERAL
 - "So sánh phương pháp A và B" → COMPARISON
 - "Các phương pháp attention phát triển như thế nào từ 2017-2024?" → TREND_ANALYSIS
 - "Vấn đề nào chưa được nghiên cứu kỹ?" → GAP_IDENTIFICATION
@@ -101,55 +100,6 @@ Format your response as:
    - Page is always estimated from the chunk position
 
 Answer:
-"""
-
-ANALYTICAL_RESPONSE_PROMPT = """Analyze the provided data and answer the user's analytical question.
-
-Context:
-{context}
-
-Metadata:
-{metadata}
-
-User Question:
-{query}
-
-Instructions:
-1. Provide a structured analysis with:
-   - Key findings (bullet points)
-   - Supporting evidence from context
-   - Relevant trends or patterns
-   - Data-driven insights
-2. Cite all sources using [doc_id]
-3. If data is insufficient, explicitly state limitations
-4. Use clear sections and headings
-5. Suggest visualizations if applicable (e.g., "This data would benefit from a line chart showing...")
-
-Analysis:
-"""
-
-MULTI_STEP_ANALYSIS_PROMPT = """Conduct a comprehensive multi-step analysis to answer the user's question.
-
-Context:
-{context}
-
-User Question:
-{query}
-
-Steps to follow:
-1. Data Overview: Summarize the available data
-2. Initial Analysis: Extract key statistics and facts
-3. Deeper Insights: Identify patterns, correlations, anomalies
-4. Recommendations: Provide actionable insights
-5. Summary: Concise executive summary
-
-For each step:
-- Use clear headings
-- Cite sources with [doc_id]
-- Provide specific evidence
-- Build logically on previous steps
-
-Complete Analysis:
 """
 
 # ============================================================================
@@ -411,15 +361,15 @@ def get_prompt_for_query_type(query_type: str) -> str:
     Get the appropriate response prompt based on query type.
 
     Args:
-        query_type: Type of query (SIMPLE, COMPLEX, ANALYTICAL, COMPARISON, etc.)
+        query_type: Type of query (GENERAL, COMPARISON, etc.)
 
     Returns:
         Appropriate prompt template
     """
     prompts = {
+        "GENERAL": QA_RESPONSE_PROMPT,
         "SIMPLE": QA_RESPONSE_PROMPT,
         "COMPLEX": QA_RESPONSE_PROMPT,
-        "ANALYTICAL": ANALYTICAL_RESPONSE_PROMPT,
         "COMPARISON": COMPARISON_MATRIX_PROMPT,
         "TREND_ANALYSIS": TREND_ANALYSIS_PROMPT,
         "GAP_IDENTIFICATION": GAP_IDENTIFICATION_PROMPT,
@@ -434,8 +384,6 @@ __all__ = [
     "QUERY_CLASSIFICATION_PROMPT",
     "QUERY_EXPANSION_PROMPT",
     "QA_RESPONSE_PROMPT",
-    "ANALYTICAL_RESPONSE_PROMPT",
-    "MULTI_STEP_ANALYSIS_PROMPT",
     "DOCUMENT_SUMMARY_PROMPT",
     "METADATA_EXTRACTION_PROMPT",
     "NO_CONTEXT_PROMPT",

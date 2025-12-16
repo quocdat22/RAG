@@ -1,28 +1,34 @@
-# RAG System for Analyst
+# Scientific Paper Research Assistant
 
-A production-ready Retrieval-Augmented Generation (RAG) system built with LlamaIndex and Chroma, designed for data analyst use cases.
+A specialized Retrieval-Augmented Generation (RAG) system designed for scientists and researchers to analyze, compare, and extract insights from academic papers.
 
 ## 🏗️ Architecture
 
-This system follows a 7-layer architecture optimized for analytical workloads:
+This system follows a modular architecture optimized for research workflows:
 
-1. **Data Ingestion Layer** - Document loaders and chunking strategies
+1. **Scientific Ingestion Layer** - PDF parsing, metadata extraction (DOI, arXiv, Venue), and section-aware chunking
 2. **Embedding & Storage Layer** - Vector embeddings with Chroma
-3. **Query Processing Layer** - Intelligent query routing and transformation
+3. **Research Query Processing** - Intelligent routing for comparisons, trends, and gap analysis
 4. **LlamaIndex Core** - Orchestration and context management
-5. **Analysis & Output Layer** - Multi-format responses (text, charts, tables)
-6. **Monitoring & Optimization** - Performance tracking and quality metrics
-7. **Caching & Performance** - Multi-level caching for speed
+5. **Research Analysis Layer** - Specialized analyzers for:
+   - **Comparison Matrices**: Compare methods side-by-side
+   - **Trend Analysis**: Track evolution of topics over time
+   - **Gap Identification**: Find missing research areas
+   - **Consensus Detection**: Identify agreement vs. controversy
+6. **Monitoring & Optimization** - Performance tracking
+7. **Caching & Performance** - Redis caching
 
 ## 🚀 Features
 
-- **Multi-format Document Support**: PDF, TXT, CSV, DOCX, XLSX
-- **Intelligent Retrieval**: Hybrid search with vector + keyword matching
-- **Re-ranking**: Cohere rerank-v3.5 for improved relevance
-- **Incremental Indexing**: Only process new documents
-- **Streamlit UI**: Easy-to-use web interface
-- **Caching**: Optional Redis caching for performance
-- **Modular Design**: Clean separation of concerns
+- **Academic Paper Specialized**: Extracts abstract, DOI, venue, and authors automatically
+- **Deep Research Analysis**:
+  - Compare multiple papers/methods automatically
+  - Analyze trends over years
+  - Detect research gaps
+- **Smart Citations**: Answers include numbered citations `[1]` linked to specific papers and pages
+- **Intelligent Retrieval**: Hybrid search + Cohere Reranking for high precision
+- **Streamlit UI**: Clean interface for searching and managing your library
+- **Incremental Indexing**: Efficiently handle growing libraries
 
 ## 📋 Prerequisites
 
@@ -72,37 +78,33 @@ Required environment variables:
 .venv/Scripts/activate && python run_ui.py
 ```
 
-### 2. Upload Documents
+### 2. Upload Papers
 
 - Navigate to http://localhost:8501
-- Upload PDF, TXT, CSV, or other supported files
-- Wait for indexing to complete
+- Upload PDF papers or text documents
+- The system will automatically extract metadata (Titles, Authors, DOIs)
 
-### 3. Query Your Data
+### 3. Research Mode
 
-- Enter your question in the query box
-- Get AI-powered answers with source citations
-- View retrieved documents and metadata
+- **General Search**: Ask questions like "What is the Transformer architecture?"
+- **Comparison**: "Compare BERT and GPT-3 on accuracy and training cost"
+- **Trend Analysis**: "How has object detection evolved from 2018 to 2024?"
+- **Gap Analysis**: "What are the limitations of current RAG approaches?"
 
 ## 📁 Project Structure
 
 ```
 RAG/
 ├── config/              # Configuration management
-│   ├── settings.py      # Centralized settings
-│   └── prompts.py       # LLM prompt templates
 ├── src/                 # Main application code
-│   ├── ingestion/       # Document loading & chunking
+│   ├── ingestion/       # Document loading & metadata extraction
 │   ├── embedding/       # Vector embeddings
-│   ├── retrieval/       # Query processing & retrieval
-│   ├── generation/      # LLM integration
-│   └── core/            # Utilities (cache, logging, etc.)
+│   ├── retrieval/       # Hybrid search & reranking
+│   ├── generation/      # LLM & Research Analyzers
+│   └── core/            # Utilities
 ├── ui/                  # Streamlit interface
 ├── tests/               # Test suite
-├── data/                # Data storage
-│   ├── documents/       # Uploaded files
-│   └── vector_db/       # Chroma database
-└── notebooks/           # Jupyter notebooks
+└── data/                # Data storage
 ```
 
 ## 🧪 Testing
@@ -110,105 +112,11 @@ RAG/
 ```bash
 # Run all tests
 uv run pytest
-
-# Run with coverage
-uv run pytest --cov=src --cov-report=html
-
-# Run specific test file
-uv run pytest tests/unit/test_ingestion.py
-```
-
-## 🛠️ Development
-
-### Code Quality
-
-```bash
-# Format code
-uv run black src/ ui/ tests/
-
-# Lint code
-uv run ruff check src/ ui/ tests/
-
-# Type checking
-uv run mypy src/
-```
-
-### Adding Dependencies
-
-```bash
-# Add production dependency
-uv add package-name
-
-# Add development dependency
-uv add --dev package-name
-```
-
-## 📊 Usage Examples
-
-### Simple Q&A
-
-```python
-from src.retrieval.query_processor import QueryProcessor
-from src.generation.llm_client import LLMClient
-
-# Initialize
-processor = QueryProcessor()
-llm = LLMClient()
-
-# Query
-result = processor.process_query("What is the revenue for Q3 2024?")
-print(result.answer)
-```
-
-### Advanced Analysis
-
-```python
-# Complex analytical query
-result = processor.process_query(
-    "Analyze revenue trends over the last 3 years and suggest strategies"
-)
-print(result.answer)
-print(result.sources)
-```
-
-## ⚙️ Configuration
-
-Key configuration options in `.env`:
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `CHUNK_SIZE` | Token size for chunks | 512 |
-| `CHUNK_OVERLAP` | Overlap between chunks | 50 |
-| `RETRIEVAL_TOP_K` | Number of docs to retrieve | 5 |
-| `ENABLE_RERANKING` | Use Cohere reranking | true |
-| `ENABLE_CACHE` | Enable Redis caching | false |
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-**Issue**: `ModuleNotFoundError: No module named 'chromadb'`
-```bash
-uv sync --reinstall
-```
-
-**Issue**: Chroma database locked
-```bash
-# Delete and recreate vector DB
-rm -rf data/vector_db/*
-# Re-index documents
-```
-
-**Issue**: Out of memory during indexing
-```bash
-# Reduce chunk size in .env
-CHUNK_SIZE=256
 ```
 
 ## 📈 Performance
 
 - **Query Latency**: < 3s (P95)
-- **Cache Hit Rate**: 60%+ (with Redis)
 - **Retrieval Precision**: 85%+
 - **Supported Scale**: 100K-1M documents
 
@@ -216,8 +124,6 @@ CHUNK_SIZE=256
 
 - API keys stored in `.env` (never committed)
 - Document data stays local
-- Optional Redis authentication
-- HTTPS recommended for production
 
 ## 📝 License
 
@@ -231,29 +137,21 @@ MIT License
 4. Run tests and linting
 5. Submit a pull request
 
-## 📞 Support
-
-For issues and questions:
-- Create a GitHub issue
-- Check the documentation
-- Review conversation history
-
 ## 🗺️ Roadmap
 
 ### Phase 1 (MVP) ✓
 - Basic Q&A functionality
-- PDF, TXT, CSV support
+- PDF support with metadata extraction
 - Streamlit UI
-- Local deployment
+- Research Analyzers (Comparison, Trends)
 
 ### Phase 2 (Planned)
-- Chart/graph visualization
-- Multi-step analysis
-- Advanced caching
-- Performance dashboard
+- Citation graph visualization
+- Export reports to LaTeX/BibTeX
+- Integration with arXiv API
+- Collaborative libraries
 
 ### Phase 3 (Future)
-- Multi-language support
-- Real-time data streaming
-- User authentication
+- Multi-modal paper understanding (Figures/Tables)
 - Cloud deployment
+
