@@ -58,15 +58,15 @@ def get_reranker():
 
 def render_query_interface():
     """Render query interface with Phase 2 enhancements."""
-    st.header("💬 Query Your Documents")
-    st.markdown("Ask questions about your uploaded documents and get AI-powered answers.")
+    st.header("🔍 Search Your Papers")
+    st.markdown("Ask questions about your research papers and get AI-powered answers with excerpts.")
 
     # Check if there are documents
     try:
         doc_count = default_vector_store.count()
         if doc_count == 0:
             st.warning(
-                "⚠️ No documents in the system yet. Please upload documents first!",
+                "⚠️ No papers in the library yet. Please upload research papers first!",
                 icon="📭",
             )
             return
@@ -88,10 +88,10 @@ def render_query_interface():
 
     # Query input
     query = st.text_area(
-        "Enter your question:",
-        placeholder="e.g., What is machine learning? (You can ask follow-up questions!)",
+        "Enter your research question:",
+        placeholder="e.g., What methods are used for text classification? What are the main findings about transformer models?",
         height=100,
-        help="Ask any question about your documents. Follow-up questions will use conversation context.",
+        help="Ask questions about your papers. Use follow-up questions for deeper exploration.",
     )
 
     # Search options
@@ -137,7 +137,7 @@ def render_query_interface():
             help="Simple: Quick factual questions | Analytical: Detailed analysis",
         )
     with col2:
-        search_button = st.button("🔍 Search & Answer", type="primary", use_container_width=True)
+        search_button = st.button("🔍 Search Papers", type="primary", use_container_width=True)
 
     # Process query
     if search_button and query:
@@ -151,7 +151,7 @@ def render_query_interface():
             memory=memory,
         )
     elif search_button:
-        st.warning("Please enter a question first!")
+        st.warning("Please enter a research question first!")
 
     # Query history
     if "query_history" in st.session_state and st.session_state.query_history:
@@ -238,7 +238,7 @@ def process_query(
         results = results[:top_k]
 
     # Show retrieved documents
-    with st.expander(f"📚 Retrieved Documents ({len(results)})"):
+    with st.expander(f"📚 Papers Found ({len(results)})"):
         for i, result in enumerate(results, 1):
             # Show score based on search method
             score_info = ""
@@ -249,10 +249,14 @@ def process_query(
             elif "similarity" in result:
                 score_info = f"Similarity: {result['similarity']:.3f}"
             
-            st.markdown(f"**Result {i}** ({score_info})")
-            st.markdown(f"*Source: {result.get('metadata', {}).get('filename', 'Unknown')}*")
+            st.markdown(f"**Paper {i}** ({score_info})")
+            
+            # Get paper title from metadata
+            metadata = result.get('metadata', {})
+            paper_title = metadata.get('title', '').strip() or metadata.get('filename', 'Unknown')
+            st.markdown(f"*📄 {paper_title}*")
             st.text_area(
-                f"Content {i}",
+                f"Excerpt {i}",
                 result.get("document", ""),
                 height=100,
                 key=f"result_{i}_{hash(query)}",
@@ -284,15 +288,17 @@ def process_query(
             st.divider()
             st.subheader("✨ Answer")
 
-            st.markdown(
-                f"""
-                <div style='background-color: #f0f9ff; padding: 1.5rem; border-radius: 0.5rem; 
-                            border-left: 4px solid #0066cc;'>
-                    {response['answer']}
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+            # Use st.markdown to properly render LaTeX formulas
+            # Convert \(...\) to $...$ for inline math
+            answer_text = response['answer']
+            # Convert LaTeX delimiters for Streamlit compatibility
+            import re
+            answer_text = re.sub(r'\\\((.+?)\\\)', r'$\1$', answer_text)
+            answer_text = re.sub(r'\\\[(.+?)\\\]', r'$$\1$$', answer_text)
+            
+            # Display in a styled container
+            st.container(border=True)
+            st.markdown(answer_text)
 
             # Show sources
             if response.get("sources"):

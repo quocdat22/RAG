@@ -98,47 +98,106 @@ class MetadataExtractor(LoggerMixin):
 
     def categorize_document(self, text: str, metadata: dict[str, Any]) -> str:
         """
-        Categorize document based on content and metadata.
+        Categorize document based on scientific domain.
 
         Args:
             text: Document text
             metadata: Document metadata
 
         Returns:
-            Category name
+            Category name (Scientific Domain)
         """
-        # Simple rule-based categorization
         text_lower = text.lower()
 
-        # Check for financial terms
-        financial_terms = [
-            "revenue",
-            "profit",
-            "financial",
-            "balance sheet",
-            "income statement",
-            "quarterly",
-            "fiscal",
+        # 1. Computer Science & AI
+        cs_terms = [
+            "algorithm",
+            "neural network",
+            "machine learning",
+            "deep learning",
+            "artificial intelligence",
+            "software",
+            "database",
+            "cloud computing",
+            "security",
+            "network",
+            "system",
+            "data science",
+            "large language model",
+            "transformer",
         ]
-        if any(term in text_lower for term in financial_terms):
-            return "financial_report"
+        if any(term in text_lower for term in cs_terms) or "computer science" in text_lower:
+            return "computer_science"
 
-        # Check for technical terms
-        technical_terms = ["api", "function", "class", "code", "software", "system"]
-        if any(term in text_lower for term in technical_terms):
-            return "technical_document"
+        # 2. Medicine & Biology
+        bio_terms = [
+            "patient",
+            "clinical",
+            "treatment",
+            "disease",
+            "cell",
+            "protein",
+            "gene",
+            "genome",
+            "medical",
+            "biological",
+            "hospital",
+            "virus",
+            "bacteria",
+        ]
+        if any(term in text_lower for term in bio_terms):
+            return "medicine_biology"
 
-        # Check for meeting-related terms
-        meeting_terms = ["meeting", "agenda", "minutes", "discussion", "action item"]
-        if any(term in text_lower for term in meeting_terms):
-            return "meeting_notes"
+        # 3. Physics & Chemistry
+        phys_terms = [
+            "quantum",
+            "particle",
+            "energy",
+            "magnetic",
+            "velocity",
+            "reaction",
+            "chemical",
+            "analyte",
+            "synthesis",
+            "atom",
+            "thermodynamics",
+        ]
+        if any(term in text_lower for term in phys_terms):
+            return "physics_chemistry"
 
-        # Check file type for data files
-        if metadata.get("file_type") in ["csv", "xlsx", "xls"]:
-            return "data_file"
+        # 4. Mathematics & Statistics
+        math_terms = [
+            "theorem",
+            "lemma",
+            "proof",
+            "proposition",
+            "corollary",
+            "equation",
+            "stochastic",
+            "distribution",
+            "variance",
+            "algebra",
+        ]
+        if any(term in text_lower for term in math_terms):
+            return "mathematics_statistics"
+
+        # 5. Economics & Business
+        econ_terms = [
+            "market",
+            "economy",
+            "finance",
+            "supply chain",
+            "consumer",
+            "marketing",
+            "stock",
+            "inflation",
+            "gdp",
+        ]
+        if any(term in text_lower for term in econ_terms):
+            return "economics_business"
 
         # Default category
-        return "general_document"
+        return "general_science"
 
     def enrich_metadata(self, document: Document) -> Document:
         """

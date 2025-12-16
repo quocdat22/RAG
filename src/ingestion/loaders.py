@@ -87,6 +87,115 @@ class BaseLoader(ABC, LoggerMixin):
 
 class PDFLoader(BaseLoader):
     """Loader for PDF files."""
+    
+    def _extract_year_from_metadata(self, reader: PdfReader) -> str:
+        """
+        Extract publication year from PDF metadata.
+        
+        Args:
+            reader: PDF reader instance
+            
+        Returns:
+            Year as string, or empty string if not found
+        """
+        import re
+        from datetime import datetime
+        
+        try:
+            if not reader.metadata:
+                return ""
+            
+            # Try to extract from creation or modification date
+            date_fields = ["/CreationDate", "/ModDate"]
+            for field in date_fields:
+                date_str = reader.metadata.get(field, "")
+                if date_str:
+                    # PDF date format: D:YYYYMMDDHHmmSSOHH'mm'
+                    year_match = re.search(r"D:(\d{4})", str(date_str))
+                    if year_match:
+                        return year_match.group(1)
+                    
+                    # Try parsing as datetime
+                    try:
+                        if isinstance(date_str, datetime):
+                            return str(date_str.year)
+                    except:
+                        pass
+        except Exception as e:
+            self.logger.debug(f"Failed to extract year from PDF metadata: {e}")
+        
+        return ""
+    
+    def _extract_year_from_content(self, content: str) -> str:
+        """
+        Extract year from content by looking for patterns.
+        
+        Args:
+            content: PDF text content
+            
+        Returns:
+            Year as string, or empty string if not found
+        """
+        import re
+        
+        # Look for common year patterns in first 2000 chars
+        sample = content[:2000]
+        
+        # Pattern: (2024), CVPR 2024, NeurIPS 2023, etc.
+        patterns = [
+            r"\b(19|20)\d{2}\b",  # Any 4-digit year
+        ]
+        
+        for pattern in patterns:
+            matches = re.findall(pattern, sample)
+            if matches:
+                # Return first reasonable year (1990-2030)
+                for match in matches:
+                    year = int(match) if isinstance(match, str) else int(match)
+                    if 1990 <= year <= 2030:
+                        return str(year)
+        
+        return ""
+    
+    def _format_author(self, author: str) -> str:
+        """
+        Format author name(s) for citation.
+        
+        Args:
+            author: Author string from PDF metadata
+            
+        Returns:
+            Formatted author string (e.g., "Author et al.")
+        """
+        if not author:
+            return ""
+        
+        # Split by common separators
+        separators = [",", ";", " and ", "&"]
+        authors = [author]
+        for sep in separators:
+            if sep in author:
+                authors = author.split(sep)
+                break
+        
+        # Clean whitespace
+        authors = [a.strip() for a in authors if a.strip()]
+        
+        if len(authors) == 0:
+            return ""
+        elif len(authors) == 1:
+            return authors[0]
+        elif len(authors) == 2:
+            return f"{authors[0]} and {authors[1]}"
+        else:
+            # Get first author's last name if possible
+            first_author = authors[0]
+            # Try to extract last name (assumes "First Last" format)
+            name_parts = first_author.split()
+            if len(name_parts) > 1:
+                return f"{name_parts[-1]} et al."
+            else:
+                return f"{first_author} et al."
 
     def load(self, file_path: Path) -> Document:
         """Load PDF document."""
@@ -127,16 +236,27 @@ class PDFLoader(BaseLoader):
             # Try to extract PDF metadata
             try:
                 if reader.metadata:
+                    raw_author = reader.metadata.get("/Author", "")
                     metadata.update(
                         {
                             "title": reader.metadata.get("/Title", ""),
-                            "author": reader.metadata.get("/Author", ""),
+                            "author": raw_author,
+                            "author_formatted": self._format_author(raw_author),
                             "subject": reader.metadata.get("/Subject", ""),
                             "creator": reader.metadata.get("/Creator", ""),
                         }
                     )
             except Exception:
                 pass
+            
+            # Extract publication year
+            year = self._extract_year_from_metadata(reader)
+            if not year:
+                # Fallback to content parsing
+                year = self._extract_year_from_content(content)
+            
+            if year:
+                metadata["year"] = year
 
             self.logger.info(
                 f"Successfully loaded PDF: {file_path.name} ({total_pages} pages)"

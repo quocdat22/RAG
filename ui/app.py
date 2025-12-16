@@ -17,8 +17,8 @@ from ui.components.query_interface import render_query_interface
 
 # Page configuration
 st.set_page_config(
-    page_title="RAG System v2.0",
-    page_icon="🤖",
+    page_title="Scientific Paper Search",
+    page_icon="📚",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -71,8 +71,8 @@ st.markdown(
 def main():
     """Main application."""
     # Header
-    st.title("🤖 RAG System v2.0 - AI-Powered Document Analysis")
-    st.markdown("*Ask questions about your documents with hybrid search, reranking, and multi-turn chat*")
+    st.title("📚 Scientific Paper Search System")
+    st.markdown("*Quickly find relevant papers and excerpts from your research library*")
 
     # Sidebar navigation
     with st.sidebar:
@@ -80,10 +80,10 @@ def main():
         page = st.radio(
             "Select a page:",
             [
-                "💬 Query Documents",
-                "📤 Upload Documents", 
-                "📚 Manage Documents",
-                "📄 Document Preview",
+                "🔍 Search Papers",
+                "📤 Upload Papers", 
+                "📚 Manage Library",
+                "📄 Paper Preview",
                 "📊 Analytics",
             ],
             label_visibility="collapsed",
@@ -106,7 +106,7 @@ def main():
             with col1:
                 st.metric("Chunks", doc_count)
             with col2:
-                st.metric("Docs", unique_docs)
+                st.metric("Papers", unique_docs)
 
             # LLM stats
             usage = default_llm_client.get_usage_stats()
@@ -144,16 +144,16 @@ def main():
             st.markdown("- 🌐 REST API (/docs)")
 
     # Main content based on selected page
-    if page == "💬 Query Documents":
+    if page == "🔍 Search Papers":
         render_query_interface()
         
-    elif page == "📤 Upload Documents":
+    elif page == "📤 Upload Papers":
         render_document_upload()
         
-    elif page == "📚 Manage Documents":
+    elif page == "📚 Manage Library":
         render_document_manager()
         
-    elif page == "📄 Document Preview":
+    elif page == "📄 Paper Preview":
         try:
             from ui.components.document_preview import render_document_preview
             render_document_preview()

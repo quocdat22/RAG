@@ -113,11 +113,21 @@ class SemanticChunker(LoggerMixin):
 
                 # Create chunk metadata (inherit from document)
                 chunk_metadata = document.metadata.copy()
+                
+                # Extract section title from chunk content
+                section_title = self._extract_section_title(chunk_text)
+                
+                # Estimate page number from chunk position
+                total_pages = chunk_metadata.get("total_pages", 1)
+                estimated_page = int((i / max(len(chunks), 1)) * total_pages) + 1
+                
                 chunk_metadata.update(
                     {
                         "chunk_index": i,
                         "total_chunks": len(chunks),
                         "doc_id": document.doc_id,
+                        "section_title": section_title,
+                        "estimated_page": estimated_page,
                     }
                 )
 
@@ -141,6 +151,58 @@ class SemanticChunker(LoggerMixin):
         except Exception as e:
             raise ChunkingError(f"Failed to chunk document {document.doc_id}: {str(e)}")
 
+    def _extract_section_title(self, text: str) -> str:
+        """
+        Extract section title from chunk text.
+        
+        Args:
+            text: Chunk text
+            
+        Returns:
+            Section title if found, otherwise "Unknown Section"
+        """
+        import re
+        
+        # Look for common section headers in first 200 chars
+        sample = text[:200].strip()
+        
+        # Common academic paper sections
+        section_patterns = [
+            r"^#+\s*(.+)",  # Markdown headers (# Section)
+            r"^([A-Z][A-Za-z\s]+):?$",  # Title case headers (Introduction:)
+            r"^\d+\.?\s+([A-Z][A-Za-z\s]+)",  # Numbered sections (1. Introduction)
+            r"^([A-Z\s]{3,})\s*$",  # ALL CAPS headers (INTRODUCTION)
+        ]
+        
+        lines = sample.split("\n")
+        for line in lines[:3]:  # Check first 3 lines
+            line = line.strip()
+            if not line:
+                continue
+                
+            for pattern in section_patterns:
+                match = re.match(pattern, line)
+                if match:
+                    title = match.group(1).strip()
+                    # Validate it's not too long (likely not a title)
+                    if len(title) < 50:
+                        return title
+        
+        # Check for common section keywords anywhere in first paragraph
+        common_sections = [
+            "abstract", "introduction", "background", "related work",
+            "methodology", "methods", "approach", "implementation",
+            "results", "experiments", "evaluation", "discussion",
+            "conclusion", "future work", "references", "appendix"
+        ]
+        
+        sample_lower = sample.lower()
+        for section in common_sections:
+            if sample_lower.startswith(section):
+                return section.title()
+        
+        return "Unknown Section"
+    
     def _split_text(self, text: str) -> list[str]:
         """
         Split text into chunks using semantic-aware strategy.

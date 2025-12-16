@@ -206,7 +206,7 @@ class ResponseSynthesizer(LoggerMixin):
             retrieved_docs: Retrieved documents
 
         Returns:
-            Formatted metadata string
+            Formatted metadata string with academic citations
         """
         metadata_parts = []
 
@@ -214,15 +214,36 @@ class ResponseSynthesizer(LoggerMixin):
             doc_id = doc.get("id", f"doc_{i}")
             metadata = doc.get("metadata", {})
 
-            # Include only useful metadata
-            useful_metadata = {
-                "source": metadata.get("filename", "Unknown"),
-                "category": metadata.get("category", "N/A"),
-                "chunk": f"{metadata.get('chunk_index', 0) + 1}/{metadata.get('total_chunks', 1)}",
-            }
-
-            metadata_str = f"[{doc_id}]: {format_metadata(useful_metadata)}"
-            metadata_parts.append(metadata_str)
+            # Extract citation components
+            # Author (formatted with et al.)
+            author = metadata.get("author_formatted", "").strip()
+            if not author:
+                author = metadata.get("author", "").strip()
+            if not author:
+                author = "Unknown Author"
+            
+            # Year
+            year = metadata.get("year", "n.d.")
+            
+            # Title (prioritize PDF title metadata, fallback to filename)
+            title = metadata.get("title", "").strip()
+            if not title:
+                title = metadata.get("filename", "Unknown Paper")
+            
+            # Section
+            section = metadata.get("section_title", "")
+            if not section or section == "Unknown Section":
+                # Fallback to chunk position
+                chunk_idx = metadata.get("chunk_index", 0)
+                section = f"Section {chunk_idx + 1}"
+            
+            # Page (estimated)
+            page = metadata.get("estimated_page", metadata.get("chunk_index", 0) + 1)
+            
+            # Build citation: [1] Author et al., Year, Title, Section, p. X
+            citation = f"[{doc_id}]: {author}, {year}, {title}, {section}, p. {page}"
+            
+            metadata_parts.append(citation)
 
         return "\n".join(metadata_parts)
 

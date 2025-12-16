@@ -12,22 +12,21 @@ from typing import Any
 # System Prompts
 # ============================================================================
 
-SYSTEM_PROMPT = """You are an expert data analyst AI assistant. Your role is to help users analyze documents and data to extract insights and answer questions accurately.
+SYSTEM_PROMPT = """You are an expert research assistant AI specialized in helping scientists and researchers find relevant information from academic papers, surveys, and preprints.
 
 Guidelines:
-1. Base your answers ONLY on the provided context - never make up information
-2. Always cite sources using [doc_id] notation
-3. If the information is not in the context, clearly state "I don't have enough information to answer this question."
-4. Provide specific numbers, dates, and facts when available
-5. Be concise but comprehensive
-6. If asked for analysis, provide structured insights with evidence
-7. Maintain a professional, helpful tone
+1. Base your answers ONLY on the provided papers - never make up information
+2. Always cite the **paper title** using format: [Paper Title] or [filename] if title unavailable
+3. Include **original excerpts/quotes** from papers to support your answers
+4. If the information is not in the papers, clearly state "I couldn't find relevant information in the available papers."
+5. Provide specific findings, methods, results, and conclusions when available
+6. Be concise but comprehensive
+7. Maintain a helpful, academic tone
 
-Your responses should be:
-- Accurate: Based strictly on provided context
-- Clear: Easy to understand
-- Cited: Always reference sources
-- Helpful: Provide actionable insights when possible
+Your responses should:
+- Start with a direct answer to the question
+- Include relevant excerpts from papers with citations
+- List the source papers at the end
 """
 
 # ============================================================================
@@ -57,23 +56,39 @@ Provide alternative queries as a bullet list. Keep them concise and focused.
 # Response Generation Prompts
 # ============================================================================
 
-QA_RESPONSE_PROMPT = """Based on the context below, answer the user's question.
+QA_RESPONSE_PROMPT = """Based on the academic papers below, answer the researcher's question.
 
-Context:
+Papers:
 {context}
 
-Metadata:
+Paper Information:
 {metadata}
 
-User Question:
+Research Question:
 {query}
 
 Instructions:
-1. Answer based ONLY on the provided context
-2. Cite sources using [doc_id] after each claim
-3. If the answer is not in the context, say "I don't have enough information about this."
-4. Provide specific details (numbers, dates, names) when available
-5. Keep the answer concise but complete
+1. Answer based ONLY on the provided papers
+2. For each key point, include an **original excerpt** from the paper in quotes
+3. Use **numbered citations** like [1], [2], etc. to reference papers
+4. **Preserve mathematical formulas** exactly as written (e.g., LaTeX notation)
+5. If relevant info not found, state "I couldn't find this information in the available papers."
+
+Format your response as:
+1. Direct answer with supporting excerpts and numbered citations [1], [2]
+2. Each excerpt should be quoted: "..." [1]
+3. At the END, add a "**References:**" section with FULL ACADEMIC CITATIONS:
+   Format: [1] Author et al., Year, Paper title, Section, p. X
+   
+   Examples:
+   - [1] Vaswani et al., 2017, Attention Is All You Need, Introduction, p. 2
+   - [2] Brown et al., 2020, Language Models are Few-Shot Learners, Methods, p. 15
+   
+   If any field is missing:
+   - No author: use "Unknown Author"
+   - No year: use "n.d."
+   - No section: use the chunk position info
+   - Page is always estimated from the chunk position
 
 Answer:
 """
@@ -164,17 +179,17 @@ Metadata:
 # Error and Fallback Prompts
 # ============================================================================
 
-NO_CONTEXT_PROMPT = """I don't have any relevant documents to answer your question: "{query}"
+NO_CONTEXT_PROMPT = """I couldn't find any relevant papers to answer your question: "{query}"
 
 This could be because:
-1. No documents have been uploaded yet
-2. The uploaded documents don't contain information about this topic
-3. The question is outside the scope of the available data
+1. No papers have been uploaded yet
+2. The available papers don't contain information about this topic
+3. The question is outside the scope of the uploaded papers
 
 Suggestions:
-- Upload relevant documents if you haven't already
-- Try rephrasing your question
-- Ask about topics covered in your uploaded documents
+- Upload relevant research papers if you haven't already
+- Try rephrasing your question with different keywords
+- Ask about topics covered in your uploaded papers
 """
 
 INSUFFICIENT_CONTEXT_PROMPT = """Based on the available documents, I found some potentially relevant information, but it's not sufficient to fully answer your question: "{query}"
