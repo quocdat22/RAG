@@ -84,7 +84,30 @@ def render_query_interface():
         with col_mem2:
             if st.button("🗑️ Clear", help="Clear conversation history"):
                 memory.clear()
+                # Clear loaded conversation ID
+                if "loaded_conversation_id" in st.session_state:
+                    del st.session_state.loaded_conversation_id
                 st.rerun()
+    
+    # Chat history controls (if enabled)
+    if settings.enable_chat_history and memory and memory.get_turn_count() > 0:
+        from ui.components.chat_history_manager import get_history_manager
+        
+        col_save1, col_save2 = st.columns([3, 1])
+        with col_save1:
+            # Show loaded conversation status
+            loaded_id = st.session_state.get("loaded_conversation_id")
+            if loaded_id:
+                st.caption(f"💾 Auto-saving to conversation: {loaded_id[:8]}")
+        with col_save2:
+            if st.button("💾 Save As", help="Save with custom name"):
+                custom_title = st.text_input("Conversation title:", key="custom_title_input")
+                if custom_title:
+                    manager = get_history_manager()
+                    conv_id = manager.save_conversation(memory, title=custom_title)
+                    st.session_state.loaded_conversation_id = conv_id
+                    st.success(f"✅ Saved as: {custom_title}")
+                    st.rerun()
 
     # Query input
     query = st.text_area(
@@ -324,6 +347,23 @@ def process_query(
                     answer=response["answer"],
                     sources=response.get("sources", []),
                 )
+                
+                # Auto-save conversation if enabled
+                if settings.enable_chat_history and settings.auto_save_conversations:
+                    try:
+                        from ui.components.chat_history_manager import get_history_manager
+                        manager = get_history_manager()
+                        
+                        # Use existing conversation ID or create new
+                        conversation_id = st.session_state.get("loaded_conversation_id")
+                        saved_id = manager.save_conversation(
+                            memory,
+                            conversation_id=conversation_id,
+                        )
+                        st.session_state.loaded_conversation_id = saved_id
+                        logger.debug(f"Auto-saved conversation {saved_id}")
+                    except Exception as e:
+                        logger.warning(f"Failed to auto-save conversation: {e}")
 
             # Add to history
             st.session_state.query_history.append(

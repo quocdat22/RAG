@@ -36,23 +36,37 @@ class LLMClient(LoggerMixin):
     def __init__(
         self,
         model: str | None = None,
+        analytical_model: str | None = None,
         api_key: str | None = None,
         base_url: str | None = None,
         temperature: float | None = None,
         max_tokens: int | None = None,
+        analytical_temperature: float | None = None,
+        analytical_max_tokens: int | None = None,
     ):
         """
         Initialize LLM client.
 
         Args:
-            model: Model name (uses settings if None)
+            model: Primary model name (uses settings if None)
+            analytical_model: Analytical model name for complex reasoning (uses settings if None)
             api_key: OpenAI API key (uses settings if None)
             base_url: OpenAI API base URL (uses settings if None)
             temperature: Generation temperature (uses settings if None)
             max_tokens: Maximum tokens to generate (uses settings if None)
+            analytical_temperature: Temperature for analytical model (uses settings if None)
+            analytical_max_tokens: Max tokens for analytical model (uses settings if None)
         """
+        # Primary model
         self.model = model or settings.model_name
         self.fallback_model = settings.fallback_model_name
+        
+        # Analytical model (GPT-5)
+        self.analytical_model = analytical_model or settings.analytical_model_name
+        self.analytical_temperature = analytical_temperature if analytical_temperature is not None else settings.analytical_temperature
+        self.analytical_max_tokens = analytical_max_tokens or settings.analytical_max_tokens
+        
+        # API configuration
         self.api_key = api_key or settings.openai_api_key
         self.base_url = base_url or settings.openai_base_url
         self.temperature = temperature if temperature is not None else settings.temperature
@@ -70,9 +84,36 @@ class LLMClient(LoggerMixin):
         self.total_cost = 0.0
 
         self.logger.info(
-            f"Initialized LLMClient: model={self.model}, "
+            f"Initialized LLMClient: model={self.model}, analytical_model={self.analytical_model}, "
             f"temperature={self.temperature}, max_tokens={self.max_tokens}"
         )
+
+    def _select_model_for_query_type(self, query_type: str) -> tuple[str, float, int]:
+        """
+        Select appropriate model, temperature, and max_tokens based on query type.
+        
+        Args:
+            query_type: Type of query (SIMPLE, ANALYTICAL, etc.)
+            
+        Returns:
+            Tuple of (model_name, temperature, max_tokens)
+        """
+        analytical_types = ["ANALYTICAL", "COMPARISON", "TREND_ANALYSIS", "GAP_IDENTIFICATION", "CONSENSUS_DETECTION"]
+        
+        if query_type in analytical_types:
+            self.logger.debug(f"Selected analytical model for {query_type}: {self.analytical_model}")
+            return (
+                self.analytical_model,
+                self.analytical_temperature,
+                self.analytical_max_tokens
+            )
+        else:
+            self.logger.debug(f"Selected primary model for {query_type}: {self.model}")
+            return (
+                self.model,
+                self.temperature,
+                self.max_tokens
+            )
 
     @log_execution_time
     @retry(
@@ -89,6 +130,7 @@ class LLMClient(LoggerMixin):
         temperature: float | None = None,
         max_tokens: int | None = None,
         use_fallback_on_error: bool = True,
+        query_type: str = "SIMPLE",
     ) -> str:
         """
         Generate text completion.
@@ -99,6 +141,7 @@ class LLMClient(LoggerMixin):
             temperature: Override default temperature
             max_tokens: Override default max tokens
             use_fallback_on_error: Use fallback model on error
+            query_type: Type of query for model selection (SIMPLE, ANALYTICAL, etc.)
 
         Returns:
             Generated text
@@ -107,13 +150,17 @@ class LLMClient(LoggerMixin):
             LLMAPIError: If API call fails
             TokenLimitExceededError: If token limit exceeded
         """
-        temperature = temperature if temperature is not None else self.temperature
-        max_tokens = max_tokens or self.max_tokens
+        # Select model based on query type
+        selected_model, model_temp, model_max_tokens = self._select_model_for_query_type(query_type)
+        
+        # Use provided params or fall back to model-specific defaults
+        temperature = temperature if temperature is not None else model_temp
+        max_tokens = max_tokens or model_max_tokens
 
         # Check token limit
-        prompt_tokens = count_tokens(prompt, self.model)
+        prompt_tokens = count_tokens(prompt, selected_model)
         if system_prompt:
-            prompt_tokens += count_tokens(system_prompt, self.model)
+            prompt_tokens += count_tokens(system_prompt, selected_model)
 
         if prompt_tokens > max_tokens:
             raise TokenLimitExceededError(prompt_tokens, max_tokens)
@@ -126,15 +173,16 @@ class LLMClient(LoggerMixin):
 
         try:
             self.logger.debug(
-                f"Generating completion: model={self.model}, "
-                f"prompt_tokens={prompt_tokens}, temperature={temperature}"
+                f"Generating completion: model={selected_model}, "
+                f"prompt_tokens={prompt_tokens}, temperature={temperature}, "
+                f"max_completion_tokens={max_tokens}"
             )
 
             response: ChatCompletion = self.client.chat.completions.create(
-                model=self.model,
+                model=selected_model,
                 messages=messages,
                 temperature=temperature,
-                max_tokens=max_tokens - prompt_tokens,  # Leave room for response
+                max_tokens=max_tokens,  # Use max_tokens directly for completion
             )
 
             # Extract response

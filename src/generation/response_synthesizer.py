@@ -123,6 +123,15 @@ class ResponseSynthesizer(LoggerMixin):
 
         # Get appropriate prompt template
         prompt_template = prompts.get_prompt_for_query_type(query_type)
+        
+        # Select appropriate system prompt based on query type
+        analytical_types = ["ANALYTICAL", "COMPARISON", "TREND_ANALYSIS", "GAP_IDENTIFICATION", "CONSENSUS_DETECTION"]
+        if query_type in analytical_types:
+            system_prompt = prompts.ANALYTICAL_SYSTEM_PROMPT
+            self.logger.debug(f"Using analytical system prompt for {query_type}")
+        else:
+            system_prompt = prompts.SYSTEM_PROMPT
+            self.logger.debug(f"Using standard system prompt for {query_type}")
 
         # Format prompt
         formatted_prompt = prompts.format_prompt(
@@ -136,7 +145,8 @@ class ResponseSynthesizer(LoggerMixin):
         try:
             answer = self.llm_client.generate(
                 prompt=formatted_prompt,
-                system_prompt=prompts.SYSTEM_PROMPT,
+                system_prompt=system_prompt,
+                query_type=query_type,  # Pass query_type for model selection
             )
 
             # Extract source IDs from retrieved docs

@@ -38,6 +38,24 @@ class Settings(BaseSettings):
     embedding_model: str = Field(
         default="text-embedding-3-small", description="Embedding model name"
     )
+    
+    # Advanced Analytical Model (GPT-5)
+    analytical_model_name: str = Field(
+        default="openai/gpt-5",
+        description="Advanced model for analytical/reasoning tasks (GPT-5)"
+    )
+    analytical_temperature: float = Field(
+        default=0.3,
+        ge=0.0,
+        le=2.0,
+        description="Temperature for analytical model (higher for creative reasoning)"
+    )
+    analytical_max_tokens: int = Field(
+        default=8192,
+        ge=256,
+        le=128000,
+        description="Max completion tokens for analytical model (GPT-5 max: 16384, using 8192 for safety)"
+    )
 
     # ============================================================================
     # Cohere Configuration
@@ -128,7 +146,7 @@ class Settings(BaseSettings):
     # Performance & Limits
     # ============================================================================
     max_tokens: int = Field(
-        default=4096, ge=256, le=128000, description="Maximum tokens for LLM"
+        default=16384, ge=256, le=128000, description="Maximum tokens for LLM context + completion"
     )
     temperature: float = Field(
         default=0.1, ge=0.0, le=2.0, description="LLM temperature"
@@ -175,12 +193,28 @@ class Settings(BaseSettings):
     )
 
     # ============================================================================
+    # Chat History Configuration
+    # ============================================================================
+    conversations_dir: Path = Field(
+        default=Path("./data/conversations"), description="Conversations storage directory"
+    )
+    enable_chat_history: bool = Field(
+        default=True, description="Enable persistent chat history storage"
+    )
+    max_saved_conversations: int = Field(
+        default=100, ge=1, le=1000, description="Maximum number of conversations to retain"
+    )
+    auto_save_conversations: bool = Field(
+        default=True, description="Auto-save conversations after each turn"
+    )
+
+    # ============================================================================
     # API Configuration (Phase 2)
     # ============================================================================
     api_host: str = Field(default="0.0.0.0", description="API server host")
     api_port: int = Field(default=8000, ge=1024, le=65535, description="API server port")
 
-    @field_validator("chroma_persist_dir", "data_dir")
+    @field_validator("chroma_persist_dir", "data_dir", "conversations_dir")
     @classmethod
     def ensure_directory_exists(cls, v: Path) -> Path:
         """Ensure directories exist, create if they don't."""

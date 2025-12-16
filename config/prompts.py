@@ -29,6 +29,36 @@ Your responses should:
 - List the source papers at the end
 """
 
+ANALYTICAL_SYSTEM_PROMPT = """You are an expert research analyst AI with deep reasoning capabilities, specialized in synthesizing insights from academic literature.
+
+Your unique strengths:
+1. **Multi-step reasoning**: Break down complex questions into logical steps
+2. **Cross-document synthesis**: Connect ideas across multiple papers to form coherent narratives  
+3. **Conversational depth**: Engage naturally while providing rigorous analysis
+4. **Critical thinking**: Evaluate methodologies, identify assumptions, and assess evidence quality
+
+Guidelines for analytical responses:
+1. Think step-by-step through complex questions
+2. **Synthesize information** - don't just quote, explain WHY it matters and HOW ideas connect
+3. Provide **conversational, engaging explanations** that feel like discussing with an expert colleague
+4. When comparing ideas, explain the **implications and trade-offs**
+5. Identify **patterns, trends, and deeper insights** beyond surface-level facts
+6. **Ground your reasoning in evidence**: Use original excerpts to support your analysis
+7. Be **precise with citations** using [source_id] format
+8. Acknowledge limitations and areas of uncertainty
+
+**Critical balance**: Your responses must be BOTH:
+- **Conversational**: Natural, engaging, explanatory (not robotic quote lists)
+- **Rigorous**: Properly cited with [source_id], grounded in evidence
+
+Your responses should feel like a thoughtful discussion with a knowledgeable researcher who can:
+- Explain complex concepts clearly
+- Draw connections between ideas  
+- Reason through ambiguities
+- Provide context and implications
+- Support claims with proper citations
+"""
+
 # ============================================================================
 # Query Processing Prompts
 # ============================================================================
@@ -65,7 +95,8 @@ Provide alternative queries as a bullet list. Keep them concise and focused.
 # Response Generation Prompts
 # ============================================================================
 
-QA_RESPONSE_PROMPT = """Based on the academic papers below, answer the researcher's question.
+# Simple mode - Concise, direct responses
+QA_SIMPLE_RESPONSE_PROMPT = """Based on the academic papers below, answer the researcher's question.
 
 Papers:
 {context}
@@ -80,27 +111,92 @@ Instructions:
 1. Answer based ONLY on the provided papers
 2. For each key point, include an **original excerpt** from the paper in quotes
 3. Use **numbered citations** like [1], [2], etc. to reference papers
-4. **Preserve mathematical formulas** exactly as written (e.g., LaTeX notation)
+4. **For mathematical formulas**: Use `$formula$` for inline math and `$$formula$$` for display math
+   - Example: The attention is $\\text{{Attention}}(Q,K,V) = \\text{{softmax}}(QK^T/\\sqrt{{d_k}})V$
 5. If relevant info not found, state "I couldn't find this information in the available papers."
 
+**CRITICAL - References Section:**
+- You MUST include a "**References:**" section at the very END of your response
+- List EVERY citation number [1], [2], [3], etc. that you used in your answer
+- Each reference must follow this format EXACTLY:
+  [N] Author(s), Year, "Paper Title", Section/Page info
+  
+- If you cite [1], [2], [3], [4] in your answer, your References section MUST have all four entries
+- DO NOT skip any citation numbers
+- If author/year is missing from metadata, use "Unknown Author, n.d."
+
+Example References section:
+**References:**
+[1] Vaswani et al., 2017, "Attention Is All You Need", Section 3.2
+[2] Brown et al., 2020, "Language Models are Few-Shot Learners", Methods
+[3] Devlin et al., 2019, "BERT: Pre-training of Deep Bidirectional Transformers", Introduction
+
 Format your response as:
-1. Direct answer with supporting excerpts and numbered citations [1], [2]
-2. Each excerpt should be quoted: "..." [1]
-3. At the END, add a "**References:**" section with FULL ACADEMIC CITATIONS:
-   Format: [1] Author et al., Year, Paper title, Section, p. X
-   
-   Examples:
-   - [1] Vaswani et al., 2017, Attention Is All You Need, Introduction, p. 2
-   - [2] Brown et al., 2020, Language Models are Few-Shot Learners, Methods, p. 15
-   
-   If any field is missing:
-   - No author: use "Unknown Author"
-   - No year: use "n.d."
-   - No section: use the chunk position info
-   - Page is always estimated from the chunk position
+1. Direct answer with supporting excerpts and citations [1], [2]
+2. Each excerpt in quotes: "..." [1]
+3. **References:** section with COMPLETE list of all citations
 
 Answer:
 """
+
+# Analytical mode - Deep reasoning, conversational synthesis (GPT-5)
+QA_ANALYTICAL_RESPONSE_PROMPT = """Based on the academic papers below, provide a thoughtful, analytical response to the research question.
+
+Papers:
+{context}
+
+Paper Information:
+{metadata}
+
+Research Question:
+{query}
+
+Instructions for Analytical Response:
+
+**Step 1: Understanding**
+- First, consider what the question is really asking
+- Identify the key concepts and their relationships
+
+**Step 2: Evidence Gathering**  
+- Review the provided papers for relevant information
+- Note supporting and contradicting evidence
+- Look for patterns across multiple sources
+
+**Step 3: Reasoning & Synthesis**
+- Connect ideas across papers to form a coherent understanding
+- **Don't just quote - EXPLAIN the significance and implications**
+- Consider the "why" and "how", not just the "what"
+- Identify underlying principles and methodologies
+- Draw connections between different findings
+
+**Step 4: Response Composition**
+- Write in a **conversational, engaging style** that feels natural
+- Start with a direct answer, then elaborate with reasoning
+- Use excerpts to **support** your analysis: "As noted in [1], '...' which suggests that..."
+- **Explain connections** between different findings
+- Discuss **implications, trade-offs, and context**
+- Maintain a natural flow - avoid robotic listing of quotes
+
+**CRITICAL - Balancing Conversation & Citations:**
+- Your response must be BOTH conversational AND properly cited
+- Weave citations naturally into your narrative
+- After presenting an idea, ground it with evidence and citation
+- Example: "The key innovation here is the self-attention mechanism, which allows the model to weigh the importance of different parts of the input. As Vaswani et al. describe it, 'An attention function can be described as mapping a query and a set of key-value pairs to an output' [1]. This approach fundamentally differs from..."
+
+**Formatting Requirements**:
+- Use numbered citations [1], [2], etc. consistently  
+- For math formulas: `$inline$` or `$$display$$`
+- Include original excerpts in quotes to ground your analysis
+- End with a **References:** section listing all citations in format:
+  [N] Author(s), Year, "Paper Title", Section/Page
+
+**Tone**: Conversational yet rigorous - like discussing with an expert colleague who explains complex ideas clearly while always backing claims with evidence.
+
+Answer:
+"""
+
+# Legacy alias for backward compatibility
+QA_RESPONSE_PROMPT = QA_SIMPLE_RESPONSE_PROMPT
 
 # ============================================================================
 # Research Analysis Prompts
@@ -361,21 +457,32 @@ def get_prompt_for_query_type(query_type: str) -> str:
     Get the appropriate response prompt based on query type.
 
     Args:
-        query_type: Type of query (GENERAL, COMPARISON, etc.)
+        query_type: Type of query (SIMPLE, ANALYTICAL, COMPARISON, etc.)
 
     Returns:
         Appropriate prompt template
     """
-    prompts = {
-        "GENERAL": QA_RESPONSE_PROMPT,
-        "SIMPLE": QA_RESPONSE_PROMPT,
-        "COMPLEX": QA_RESPONSE_PROMPT,
+    # Analytical types use deep reasoning prompts
+    analytical_types = ["ANALYTICAL", "COMPARISON", "TREND_ANALYSIS", "GAP_IDENTIFICATION", "CONSENSUS_DETECTION"]
+    
+    # Specialized analytical prompts
+    specialized_prompts = {
         "COMPARISON": COMPARISON_MATRIX_PROMPT,
         "TREND_ANALYSIS": TREND_ANALYSIS_PROMPT,
         "GAP_IDENTIFICATION": GAP_IDENTIFICATION_PROMPT,
         "CONSENSUS_DETECTION": CONSENSUS_DETECTION_PROMPT,
     }
-    return prompts.get(query_type, QA_RESPONSE_PROMPT)
+    
+    # Return specialized prompt if available
+    if query_type in specialized_prompts:
+        return specialized_prompts[query_type]
+    
+    # Use analytical prompt for ANALYTICAL type
+    if query_type == "ANALYTICAL":
+        return QA_ANALYTICAL_RESPONSE_PROMPT
+    
+    # Default to simple prompt for SIMPLE, GENERAL, COMPLEX, etc.
+    return QA_SIMPLE_RESPONSE_PROMPT
 
 
 # Export all prompts
