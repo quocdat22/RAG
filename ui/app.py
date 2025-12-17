@@ -8,6 +8,9 @@ Chat-First UX with:
 """
 
 import streamlit as st
+import streamlit_authenticator as stauth
+import yaml
+from pathlib import Path
 
 from config.settings import settings
 from src.core.logging import get_logger
@@ -21,6 +24,53 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+# ============================================================================
+# Authentication with streamlit-authenticator (Admin only)
+# ============================================================================
+
+# Load user credentials from users.yaml
+users_file = Path(__file__).parent.parent / "data" / "users.yaml"
+if users_file.exists():
+    with open(users_file, 'r', encoding='utf-8') as f:
+        config = yaml.safe_load(f)
+else:
+    # Fallback config if users.yaml doesn't exist
+    config = {
+        'credentials': {
+            'usernames': {}
+        },
+        'cookie': {
+            'expiry_days': 30,
+            'key': 'rag_auth_cookie',
+            'name': 'rag_auth'
+        }
+    }
+
+# Create authenticator
+authenticator = stauth.Authenticate(
+    config['credentials'],
+    config.get('cookie', {}).get('name', 'rag_auth'),
+    config.get('cookie', {}).get('key', 'rag_auth_cookie'),
+    config.get('cookie', {}).get('expiry_days', 30),
+)
+
+# Login form
+try:
+    authenticator.login(location='main')
+except Exception as e:
+    logger.error(f"Login error: {e}")
+    st.error("Login failed. Please try again.")
+
+# Check authentication status
+if st.session_state.get("authentication_status") is None:
+    st.title("🔬 Research Paper Chat")
+    st.info("Vui lòng đăng nhập để sử dụng hệ thống.")
+    st.stop()
+elif st.session_state.get("authentication_status") is False:
+    st.title("🔬 Research Paper Chat")
+    st.error("Sai tên đăng nhập hoặc mật khẩu!")
+    st.stop()
 
 # Custom CSS for chat-first design
 st.markdown(
@@ -61,6 +111,13 @@ st.markdown(
 def render_conversation_sidebar():
     """Render conversation list in sidebar."""
     with st.sidebar:
+        # User info and logout
+        user_name = st.session_state.get("name", st.session_state.get("username", "Admin"))
+        st.markdown(f"👤 **{user_name}**")
+        authenticator.logout("🚪 Logout", location="sidebar")
+        
+        st.divider()
+        
         # New chat button
         if st.button("➕ New Chat", key="new_chat_btn", use_container_width=True, type="primary"):
             # Clear current conversation

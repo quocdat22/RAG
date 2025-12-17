@@ -25,6 +25,7 @@ python-dotenv>=1.0.0
 
 # UI
 streamlit>=1.30.0
+Authlib==1.6.5  # Compatible with Streamlit 1.52.1 OIDC
 
 # Utilities
 tiktoken>=0.5.2
